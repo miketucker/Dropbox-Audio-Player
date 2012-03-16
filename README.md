@@ -20,7 +20,6 @@ Use the live service at [soundstash.heroku.com](http://soundstash.heroku.com) or
 
 - Reorder, modify playlist
 - Read subdirectories
-- Use ID3 data from mp3s
 - OGG support
 - Sort by artist, title
 
