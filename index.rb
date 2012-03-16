@@ -3,14 +3,17 @@ require 'sinatra'
 require 'pp'
 require 'dropbox_sdk'
 require 'json'
-require 'mp3info'
 require 'open-uri'
 require 'stringio'
+require 'net/http'
+require 'net/https'
+require 'uri'
+require 'mp3info'
 
 set :public_folder, 'brunch/build'
 
-APP_KEY = 'XXXXXXXXXX'
-APP_SECRET = 'XXXXXXXXXX'
+APP_KEY = 'XXXXX'
+APP_SECRET = 'XXXXX'
 ACCESS_TYPE = :app_folder
 						
 						
@@ -166,15 +169,37 @@ end
 # TODO: support other audio types?
 # TODO: metadata from mp3s
 
+class Net::HTTPResponse
+  attr_reader :socket
+end
+
 def do_json (db_client,entry)
 
 	ar = []
-	i = 0
+i = 0
 	entry['contents'].each do |child|
-		if child['mime_type'] == "audio/mpeg"
+		if child['mime_type'] == "audio/mpeg" || child['mime_type'] == "audio/ogg"
 			child['mp3'] = db_client.media(child['path'])['url']
+
+			url = URI.parse child['mp3']
+			http = Net::HTTP.new(url.host, url.port)
+			http.use_ssl = (url.scheme == 'https')
+
+			req = Net::HTTP::Get.new(url.path)
+			req.range = (0..4024)
+
+			res = http.request(req)
+			
+
+			Mp3Info.open( StringIO.open(res.body) ) do |m|
+				t = child['path'][1..-1].split('.')
+
+				child['title'] = m.tag.title ? m.tag.title : t[0..(t.count-2)].join(' ') 
+				child['album'] = m.tag.album ? m.tag.album : "Unknown Album" 
+				child['artist'] = m.tag.artist ? m.tag.artist : "Unknown Artist" 
+				child['length'] = m.length > 0 ? m.length : "?:??"
+			end
 			# FORMAT title 
-			child['title'] = child['path'][1..-1].split('.')[0..(ar.count-2)].join(' ')
 			ar.push child
 			i += 1
 		end
