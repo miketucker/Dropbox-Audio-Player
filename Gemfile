@@ -1,0 +1,5 @@
+source 'http://rubygems.org'
+gem 'sinatra'
+gem 'dropbox-sdk'
+gem 'json'
+gem 'mp3info'
